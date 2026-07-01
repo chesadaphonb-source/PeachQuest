@@ -299,54 +299,76 @@
         </div>
       </div>
 
-      <div id="calendar-section" class="hidden animate-fade-in max-w-5xl mx-auto">
-        <div class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
+      <div id="calendar-section" class="hidden animate-fade-in max-w-6xl mx-auto">
+        <div class="flex flex-col lg:grid lg:grid-cols-3 gap-8 items-start">
 
-          <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-            <div>
-              <h2 class="heading-font text-2xl font-bold text-gray-800 flex items-center gap-2">
-                🗓️ ตารางคิวงานช่าง
-              </h2>
-              <p class="text-sm text-gray-500">ตรวจสอบคิวปฏิบัติงานของเจ้าหน้าที่ช่าง</p>
-            </div>
+          <div class="order-1 lg:order-1 lg:col-span-2 w-full">
+            <div class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
 
-            <div class="flex bg-gray-100 p-1 rounded-xl">
-              <button onclick="switchCalendarView('calendar')" id="view-cal-btn" class="px-4 py-2 rounded-lg text-sm font-bold transition-all bg-white shadow-sm text-orange-600">
-                📅 แบบตารางเดือน
-              </button>
-              <button onclick="switchCalendarView('grid')" id="view-grid-btn" class="px-4 py-2 rounded-lg text-sm font-bold transition-all text-gray-500 hover:text-gray-700">
-                🗂️ แบบการ์ด
-              </button>
+              <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                <div>
+                  <h2 class="heading-font text-2xl font-bold text-gray-800 flex items-center gap-2">
+                    🗓️ ตารางคิวงานช่าง
+                  </h2>
+                  <p class="text-sm text-gray-500">ตรวจสอบคิวปฏิบัติงานของเจ้าหน้าที่ช่าง</p>
+                </div>
+
+                <div class="flex bg-gray-100 p-1 rounded-xl">
+                  <button onclick="switchCalendarView('calendar')" id="view-cal-btn" class="px-4 py-2 rounded-lg text-sm font-bold transition-all bg-white shadow-sm text-orange-600">
+                    📅 แบบตารางเดือน
+                  </button>
+                  <button onclick="switchCalendarView('grid')" id="view-grid-btn" class="px-4 py-2 rounded-lg text-sm font-bold transition-all text-gray-500 hover:text-gray-700">
+                    🗂️ แบบการ์ด
+                  </button>
+                </div>
+              </div>
+
+              <div class="flex flex-wrap gap-2 items-center justify-end mb-4 font-sans text-xs font-medium text-gray-600">
+                <div class="flex items-center gap-1.5 bg-rose-50 text-rose-700 px-3 py-1.5 rounded-full border border-rose-100">
+                  <span class="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-sm"></span>
+                  <span>🚨 งานด่วน / Walk-in</span>
+                </div>
+                <div class="flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full border border-blue-100">
+                  <span class="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm"></span>
+                  <span>📅 งานนัดหมาย</span>
+                </div>
+                <div class="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-full border border-emerald-100">
+                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm"></span>
+                  <span>✅ เสร็จสิ้น</span>
+                </div>
+              </div>
+
+              <div class="relative min-h-[600px]">
+                <div id="calendar-loading" class="hidden absolute inset-0 bg-white z-10 flex flex-col items-center justify-center rounded-xl">
+                  <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-orange-500 mb-4"></div>
+                  <p class="text-gray-500 font-medium animate-pulse">กำลังโหลดตารางงาน...</p>
+                </div>
+                <div id="calendar" class="min-h-[600px] relative z-0"></div>
+                <div id="calendar-grid-view" class="hidden">
+                  <div id="calendar-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div class="flex flex-wrap gap-2 items-center justify-end mb-4 font-sans text-xs font-medium text-gray-600">
-            <div class="flex items-center gap-1.5 bg-rose-50 text-rose-700 px-3 py-1.5 rounded-full border border-rose-100">
-              <span class="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-sm"></span>
-              <span>🚨 งานด่วน / Walk-in</span>
-            </div>
-            <div class="flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full border border-blue-100">
-              <span class="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm"></span>
-              <span>📅 งานนัดหมาย</span>
-            </div>
-            <div class="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-full border border-emerald-100">
-              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm"></span>
-              <span>✅ เสร็จสิ้น</span>
+          <div class="order-2 lg:order-2 lg:col-span-1 w-full">
+            <div class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
+              <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center text-xl">🗓️</div>
+                <div>
+                  <h3 class="font-bold text-gray-800 heading-font">กำหนดการจองห้องประชุม</h3>
+                  <p class="text-xs text-gray-500">203, 205, 401, 402</p>
+                </div>
+              </div>
+              <div id="room-bookings-sidebar" class="space-y-3 max-h-[600px] overflow-y-auto pr-1">
+                <div class="text-center py-8 text-gray-300 text-sm">กำลังโหลด...</div>
+              </div>
             </div>
           </div>
 
-          <div class="relative min-h-[600px]">
-            <div id="calendar-loading" class="hidden absolute inset-0 bg-white z-10 flex flex-col items-center justify-center rounded-xl">
-              <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-orange-500 mb-4"></div>
-              <p class="text-gray-500 font-medium animate-pulse">กำลังโหลดตารางงาน...</p>
-            </div>
-            <div id="calendar" class="min-h-[600px] relative z-0"></div>
-            <div id="calendar-grid-view" class="hidden">
-              <div id="calendar-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
-            </div>
-          </div>
         </div>
       </div>
+
 
       <div id="track-section" class="hidden animate-fade-in max-w-3xl mx-auto">
         <div class="bg-white rounded-2xl shadow-xl p-8 border border-gray-100 min-h-[500px]">
