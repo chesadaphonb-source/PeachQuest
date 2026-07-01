@@ -27,7 +27,7 @@
     body { font-family: 'Sarabun', sans-serif; }
 
     /* Modal Styles */
-    #web-modal {
+    #room-modal {
       display: none;
       position: fixed;
       inset: 0;
@@ -38,10 +38,10 @@
       justify-content: center;
       padding: 1rem;
     }
-    #web-modal.open {
+    #room-modal.open {
       display: flex;
     }
-    #web-modal-box {
+    #room-modal-box {
       background: white;
       border-radius: 1.5rem;
       width: 100%;
@@ -184,6 +184,16 @@
                   <textarea id="details" rows="3" placeholder="ระบุรายละเอียดอาการชำรุดเพิ่มเติม..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 transition-colors"></textarea>
                 </div>
 
+                <div class="mb-6">
+                  <label class="block text-gray-700 text-sm font-bold mb-2">
+                    📷 แนบรูปภาพ (ไม่เกิน 3 รูป)
+                  </label>
+                  <input type="file" id="photos" accept="image/*" multiple
+                    class="w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100 border border-gray-300 rounded-lg cursor-pointer">
+                  <p class="text-[11px] text-gray-400 mt-1">*ถ่ายรูปจุดที่ชำรุดให้ช่างเห็นก่อนเข้าตรวจสอบ ระบบจะย่อขนาดรูปให้อัตโนมัติ</p>
+                  <div id="photo-preview" class="flex flex-wrap gap-2 mt-3"></div>
+                </div>
+
                 <div class="bg-orange-50/60 border border-orange-100 rounded-2xl p-5 shadow-sm relative overflow-hidden group hover:border-orange-200 transition-all mt-6">
                   <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-orange-100 rounded-full opacity-50 blur-xl pointer-events-none"></div>
                   <div class="relative z-10">
@@ -276,12 +286,12 @@
               </div>
             </div>
 
-            <button onclick="openWebModal()"
+            <button onclick="openRoomModal()"
               class="w-full bg-white border-2 border-dashed border-orange-300 hover:border-orange-400 hover:bg-orange-50 rounded-2xl p-5 text-center transition-all group card-hover">
-              <div class="w-12 h-12 bg-orange-50 group-hover:bg-orange-100 rounded-xl flex items-center justify-center text-2xl mx-auto mb-3 transition-colors">🏢</div>
-              <h3 class="font-bold text-gray-800 text-base heading-font mb-1">ขอปรับปรุง / ต่อเติมอาคาร</h3>
-              <p class="text-xs text-gray-500">แจ้งความประสงค์งานทาสี ต่อเติม หรือกั้นห้อง</p>
-              <span class="inline-block mt-3 text-xs text-orange-600 font-bold bg-orange-100 px-3 py-1 rounded-full">คลิกเพื่อกรอกคำร้อง →</span>
+              <div class="w-12 h-12 bg-orange-50 group-hover:bg-orange-100 rounded-xl flex items-center justify-center text-2xl mx-auto mb-3 transition-colors">🗓️</div>
+              <h3 class="font-bold text-gray-800 text-base heading-font mb-1">จองห้องประชุม</h3>
+              <p class="text-xs text-gray-500">ห้อง 203, 205, 401, 402 — จองคิวใช้งานล่วงหน้า</p>
+              <span class="inline-block mt-3 text-xs text-orange-600 font-bold bg-orange-100 px-3 py-1 rounded-full">คลิกเพื่อจองห้อง →</span>
             </button>
 
           </div>
@@ -433,161 +443,101 @@
         <div class="p-8 text-center text-gray-400">กำลังโหลดข้อมูล...</div>
       </div>
 
+      <div class="flex items-center gap-2 mt-8 mb-4">
+        <h3 class="font-bold text-gray-700 text-lg flex items-center gap-2">🗓️ รายการจองห้องประชุม</h3>
+      </div>
+      <div id="room-bookings-list" class="bg-white rounded-xl shadow-sm border border-gray-200 divide-y divide-gray-100 min-h-[120px]">
+        <div class="p-8 text-center text-gray-400">กำลังโหลดข้อมูล...</div>
+      </div>
+
     </div>
   </div>
 
-  <div id="web-modal" onclick="handleModalBackdrop(event)">
-    <div id="web-modal-box">
+  <div id="room-modal" onclick="handleRoomModalBackdrop(event)">
+    <div id="room-modal-box">
       <div class="flex items-center justify-between p-6 border-b border-gray-100 sticky top-0 bg-white rounded-t-2xl z-10">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center text-xl">🏢</div>
+          <div class="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center text-xl">🗓️</div>
           <div>
-            <h3 class="font-bold text-gray-800 text-lg heading-font">ขอปรับปรุง / ต่อเติมอาคาร</h3>
-            <p class="text-xs text-gray-500">แจ้งความประสงค์งานโครงสร้าง ต่อเติม หรือปรับปรุงพื้นที่</p>
+            <h3 class="font-bold text-gray-800 text-lg heading-font">จองห้องประชุม</h3>
+            <p class="text-xs text-gray-500">ห้อง 203, 205, 401, 402 — ระบบจะเช็คคิวไม่ให้จองซ้อนกัน</p>
           </div>
         </div>
-        <div class="flex items-center gap-3">
-          <div id="web-level-badge">
-            <span class="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-lg border border-green-200">🟢 เล็กน้อย</span>
-          </div>
-          <button onclick="closeWebModal()" class="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all text-xl font-bold">✕</button>
-        </div>
+        <button onclick="closeRoomModal()" class="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all text-xl font-bold">✕</button>
       </div>
 
       <div class="p-6">
-        <form id="web-request-form" class="space-y-4">
+        <form id="room-request-form" class="space-y-4">
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อผู้จอง <span class="text-red-500">*</span></label>
+              <input type="text" id="room-name" required
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-sm"
+                placeholder="ระบุชื่อผู้จอง">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">เบอร์ติดต่อ <span class="text-red-500">*</span></label>
+              <input type="text" id="room-contact" required maxlength="10"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none text-sm"
+                placeholder="0xx-xxx-xxxx">
+            </div>
+          </div>
 
           <div>
-            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">ข้อมูลผู้ยื่นคำร้อง</p>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อ-นามสกุล <span class="text-red-500">*</span></label>
-                <input type="text" id="web-name" required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-sm"
-                  placeholder="ระบุชื่อผู้ขอ">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">แผนก / หน่วยงาน</label>
-                <input type="text" id="web-dept"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none text-sm"
-                  placeholder="เช่น การเงิน, บุคคล">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">เบอร์ติดต่อ</label>
-                <input type="text" id="web-contact" maxlength="10"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none text-sm"
-                  placeholder="0xx-xxx-xxxx">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">พื้นที่ดำเนินการ <span class="text-red-500">*</span></label>
-                <select id="web-audience" required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none text-sm bg-white">
-                  <option value="">-- เลือกพื้นที่ --</option>
-                  <option>ห้องเรียน / ห้องประชุม</option>
-                  <option>ห้องพักอาจารย์ / เจ้าหน้าที่</option>
-                  <option>พื้นที่ส่วนกลาง / ทางเดิน</option>
-                  <option>ภายนอกอาคาร / โรงรถ</option>
-                </select>
-              </div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">ห้องที่ต้องการ <span class="text-red-500">*</span></label>
+            <select id="room-select" required
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none text-sm bg-white">
+              <option value="">-- เลือกห้องประชุม --</option>
+              <option value="ห้องประชุม 203">ห้องประชุมใหญ่ 203</option>
+              <option value="ห้องประชุม 205">ห้องประชุมใหญ่ 205</option>
+              <option value="ห้องประชุม 401">ห้องประชุมใหญ่ 401</option>
+              <option value="ห้องประชุม 402">ห้องประชุมใหญ่ 402</option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">วันที่ใช้ห้อง <span class="text-red-500">*</span></label>
+              <input type="date" id="room-date" required
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none text-sm">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">เวลาเริ่ม <span class="text-red-500">*</span></label>
+              <input type="time" id="room-start" required
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none text-sm">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">เวลาสิ้นสุด <span class="text-red-500">*</span></label>
+              <input type="time" id="room-end" required
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none text-sm">
             </div>
           </div>
 
-          <div class="pt-2 border-t border-gray-100">
-            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">รายละเอียดงานปรับปรุง</p>
-            <div class="space-y-3">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อโครงการ / วัตถุประสงค์ <span class="text-red-500">*</span></label>
-                <input type="text" id="web-purpose" required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none text-sm"
-                  placeholder="เช่น กั้นห้องทำงานใหม่, ทาสีห้องประชุมใหญ่">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">ลิ้งค์แบบแปลน / รูปภาพแนบ (ถ้ามี)</label>
-                <input type="text" id="web-ref"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none text-sm"
-                  placeholder="https://drive.google.com/...">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">รายละเอียดเพิ่มเติม</label>
-                <textarea id="web-details" rows="2"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none text-sm resize-none"
-                  placeholder="อธิบายสิ่งที่ต้องการให้ทีมช่างดำเนินการเพิ่มเติม..."></textarea>
-              </div>
-            </div>
-          </div>
-
-          <div class="pt-2 border-t border-gray-100">
-            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-              ขอบเขตงานที่เกี่ยวข้อง
-              <span class="normal-case font-normal text-gray-400"> — ประเมินสเกลงานให้อัตโนมัติ</span>
-            </p>
-            <div class="space-y-2" id="web-features">
-              <label class="flex items-center gap-3 cursor-pointer group">
-                <input type="checkbox" data-level="1" class="web-feature-cb w-4 h-4 accent-orange-500">
-                <span class="text-sm text-gray-700 group-hover:text-gray-900">🎨 งานทาสี / ตกแต่งพื้นผิวเล็กน้อย</span>
-                <span class="ml-auto text-xs text-green-600 font-medium bg-green-50 px-2 py-0.5 rounded">เล็กน้อย</span>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">รูปแบบการประชุม <span class="text-red-500">*</span></label>
+            <div class="flex gap-4">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="room-mode" value="ออนไลน์" class="w-4 h-4 accent-orange-500" required>
+                <span class="text-sm text-gray-700">💻 ออนไลน์</span>
               </label>
-              <label class="flex items-center gap-3 cursor-pointer group">
-                <input type="checkbox" data-level="1" class="web-feature-cb w-4 h-4 accent-orange-500">
-                <span class="text-sm text-gray-700 group-hover:text-gray-900">🪟 ซ่อมแซมเปลี่ยนหน้าต่าง / มุ้งลวด / กลอน</span>
-                <span class="ml-auto text-xs text-green-600 font-medium bg-green-50 px-2 py-0.5 rounded">เล็กน้อย</span>
-              </label>
-              <label class="flex items-center gap-3 cursor-pointer group">
-                <input type="checkbox" data-level="2" class="web-feature-cb w-4 h-4 accent-orange-500">
-                <span class="text-sm text-gray-700 group-hover:text-gray-900">🧱 งานกั้นห้อง / ติดตั้งผนังเบา</span>
-                <span class="ml-auto text-xs text-amber-600 font-medium bg-amber-50 px-2 py-0.5 rounded">ปานกลาง</span>
-              </label>
-              <label class="flex items-center gap-3 cursor-pointer group">
-                <input type="checkbox" data-level="2" class="web-feature-cb w-4 h-4 accent-orange-500">
-                <span class="text-sm text-gray-700 group-hover:text-gray-900">🚰 งานเดินระบบท่อน้ำดี-น้ำเสียใหม่</span>
-                <span class="ml-auto text-xs text-amber-600 font-medium bg-amber-50 px-2 py-0.5 rounded">ปานกลาง</span>
-              </label>
-              <label class="flex items-center gap-3 cursor-pointer group">
-                <input type="checkbox" data-level="2" class="web-feature-cb w-4 h-4 accent-orange-500">
-                <span class="text-sm text-gray-700 group-hover:text-gray-900">⚡ งานเดินสายไฟเมน / ติดตั้งตู้คอนซูเมอร์ใหม่</span>
-                <span class="ml-auto text-xs text-amber-600 font-medium bg-amber-50 px-2 py-0.5 rounded">ปานกลาง</span>
-              </label>
-              <label class="flex items-center gap-3 cursor-pointer group">
-                <input type="checkbox" data-level="3" class="web-feature-cb w-4 h-4 accent-orange-500">
-                <span class="text-sm text-gray-700 group-hover:text-gray-900">🏗️ งานโครงสร้างเหล็ก / งานปูน / เทพื้นฐานราก</span>
-                <span class="ml-auto text-xs text-red-600 font-medium bg-red-50 px-2 py-0.5 rounded">ใหญ่</span>
-              </label>
-              <label class="flex items-center gap-3 cursor-pointer group">
-                <input type="checkbox" data-level="3" class="web-feature-cb w-4 h-4 accent-orange-500">
-                <span class="text-sm text-gray-700 group-hover:text-gray-900">💧 งานรื้อถอน / แก้ไขระบบกันซึมดาดฟ้า-หลังคา</span>
-                <span class="ml-auto text-xs text-red-600 font-medium bg-red-50 px-2 py-0.5 rounded">ใหญ่</span>
-              </label>
-              <label class="flex items-center gap-3 cursor-pointer group">
-                <input type="checkbox" data-level="3" class="web-feature-cb w-4 h-4 accent-orange-500">
-                <span class="text-sm text-gray-700 group-hover:text-gray-900">🏠 งานต่อเติมอาคาร / ขยายพื้นที่สิ่งปลูกสร้าง</span>
-                <span class="ml-auto text-xs text-red-600 font-medium bg-red-50 px-2 py-0.5 rounded">ใหญ่</span>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="room-mode" value="ออฟไลน์" class="w-4 h-4 accent-orange-500">
+                <span class="text-sm text-gray-700">🧑‍🤝‍🧑 ออฟไลน์</span>
               </label>
             </div>
           </div>
 
-          <div class="pt-2 border-t border-gray-100">
-            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">กำหนดการ</p>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">วันที่ต้องการให้เสร็จ <span class="text-red-500">*</span></label>
-                <input type="date" id="web-deadline" required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none text-sm">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">ความเร่งด่วน</label>
-                <select id="web-urgency"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none text-sm bg-white">
-                  <option value="ปกติ">ปกติ (แผนงานประจำเดือน)</option>
-                  <option value="เร่ง">เร่งด่วน (ต้องการใช้งานใน 1-2 สัปดาห์)</option>
-                  <option value="ด่วนมาก">ด่วนที่สุด (มีผลกระทบต่อความปลอดภัย/การเรียนการสอน)</option>
-                </select>
-              </div>
-            </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อโครงการ / เหตุผลการใช้ห้อง <span class="text-red-500">*</span></label>
+            <textarea id="room-purpose" rows="2" required
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none text-sm resize-none"
+              placeholder="เช่น ประชุมโครงการ..., สัมมนาภาควิชา..."></textarea>
           </div>
 
           <button type="submit"
             class="w-full bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold py-3 px-4 rounded-lg transition hover:scale-[1.02] shadow-lg flex items-center justify-center gap-2">
-            🏢 ส่งคำขอปรับปรุง / ต่อเติมอาคาร
+            🗓️ ยืนยันการจองห้องประชุม
           </button>
 
         </form>
@@ -601,24 +551,24 @@
     // ==========================================
     // Modal Functions
     // ==========================================
-    function openWebModal() {
-      document.getElementById('web-modal').classList.add('open');
+    function openRoomModal() {
+      document.getElementById('room-modal').classList.add('open');
       document.body.style.overflow = 'hidden';
     }
 
-    function closeWebModal() {
-      document.getElementById('web-modal').classList.remove('open');
+    function closeRoomModal() {
+      document.getElementById('room-modal').classList.remove('open');
       document.body.style.overflow = '';
     }
 
-    function handleModalBackdrop(e) {
-      if (e.target === document.getElementById('web-modal')) {
-        closeWebModal();
+    function handleRoomModalBackdrop(e) {
+      if (e.target === document.getElementById('room-modal')) {
+        closeRoomModal();
       }
     }
 
     document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') closeWebModal();
+      if (e.key === 'Escape') closeRoomModal();
     });
 
     // ==========================================
