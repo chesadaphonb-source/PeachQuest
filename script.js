@@ -4,6 +4,9 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbykZTLrbAQnDfGVl8IyVXIi
 // --- ช่างผู้รับผิดชอบ (ระบบนี้มีช่างคนเดียว จึง auto-assign ให้ทันทีตอนกด "รับเรื่อง") ---
 const TECHNICIAN_NAME = 'นายพีรภัทร ด้วงสโมสร';
 
+// --- ตัวแปรเก็บไฟล์รูปที่แนบในฟอร์มแจ้งซ่อม (ไม่เกิน 3 รูป) ---
+let selectedPhotoFiles = [];
+
 // --- ข้อมูลชั้นของแต่ละอาคาร ---
 const buildingData = {
     "อาคาร 1": [
@@ -67,14 +70,31 @@ async function fetchTickets() {
   }
 }
 
-async function fetchWebRequests() {
+async function fetchRoomBookings() {
   try {
-    const response = await fetch(API_URL + '?type=web');
+    const response = await fetch(API_URL + '?type=rooms');
     const data = await response.json();
     return Array.isArray(data) ? data : [];
   } catch (error) {
-    console.error('Error fetching web requests:', error);
+    console.error('Error fetching room bookings:', error);
     return [];
+  }
+}
+
+// จองห้องประชุม: ใช้ fetch แบบอ่าน response ได้จริง (ไม่ใช้ no-cors)
+// เพื่อให้ backend ตอบกลับได้ว่าห้องไม่ว่าง/จองซ้อนหรือไม่
+async function saveRoomBooking(bookingData) {
+  try {
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'room_booking', ...bookingData })
+    });
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error('Error saving room booking:', error);
+    return { status: 'error', message: 'ไม่สามารถเชื่อมต่อระบบได้ กรุณาลองใหม่อีกครั้ง' };
   }
 }
 
@@ -151,17 +171,107 @@ document.addEventListener('DOMContentLoaded', () => {
         switchView('admin');
     }
 
-    document.querySelectorAll('.web-feature-cb').forEach(cb => {
-      cb.addEventListener('change', updateWebLevel);
-    });
-
-    const webContactInput = document.getElementById('web-contact');
-    if (webContactInput) {
-      webContactInput.addEventListener('input', function() {
+    const roomContactInput = document.getElementById('room-contact');
+    if (roomContactInput) {
+      roomContactInput.addEventListener('input', function() {
         this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);
       });
     }
+
+    // 🟢 จำกัดวันที่จองห้องให้เลือกได้ตั้งแต่วันนี้เป็นต้นไป
+    const roomDateInput = document.getElementById('room-date');
+    if (roomDateInput) {
+      roomDateInput.min = new Date().toISOString().split('T')[0];
+    }
+
+    // 🟢 ตั้งค่าช่องแนบรูปภาพ (ไม่เกิน 3 รูป, ย่อขนาดอัตโนมัติ)
+    const photosInput = document.getElementById('photos');
+    if (photosInput) {
+      photosInput.addEventListener('change', handlePhotoSelection);
+    }
 });
+
+// ==========================================
+// 📷 จัดการรูปภาพแนบ (บีบอัด + พรีวิว)
+// ==========================================
+async function handlePhotoSelection(e) {
+    const files = Array.from(e.target.files || []);
+
+    if (files.length > 3) {
+        Swal.fire({ icon: 'warning', title: 'แนบได้สูงสุด 3 รูป', text: 'กรุณาเลือกรูปใหม่ไม่เกิน 3 รูป', confirmButtonColor: '#ea580c' });
+        e.target.value = '';
+        selectedPhotoFiles = [];
+        renderPhotoPreview();
+        return;
+    }
+
+    const previewEl = document.getElementById('photo-preview');
+    if (previewEl) previewEl.innerHTML = '<div class="text-xs text-gray-400">กำลังประมวลผลรูปภาพ...</div>';
+
+    try {
+        selectedPhotoFiles = await Promise.all(files.map(file => compressImageToBase64(file)));
+        renderPhotoPreview();
+    } catch (err) {
+        console.error('Photo compress error:', err);
+        Swal.fire({ icon: 'error', title: 'ไม่สามารถประมวลผลรูปภาพได้', confirmButtonColor: '#ea580c' });
+        selectedPhotoFiles = [];
+        renderPhotoPreview();
+    }
+}
+
+function compressImageToBase64(file, maxWidth = 1280, quality = 0.7) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => {
+                let width = img.width;
+                let height = img.height;
+                if (width > maxWidth) {
+                    height = Math.round(height * (maxWidth / width));
+                    width = maxWidth;
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                const dataUrl = canvas.toDataURL('image/jpeg', quality);
+                resolve({
+                    filename: file.name,
+                    mimeType: 'image/jpeg',
+                    base64: dataUrl.split(',')[1],
+                    previewUrl: dataUrl
+                });
+            };
+            img.onerror = reject;
+            img.src = event.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+function renderPhotoPreview() {
+    const previewEl = document.getElementById('photo-preview');
+    if (!previewEl) return;
+    if (selectedPhotoFiles.length === 0) {
+        previewEl.innerHTML = '';
+        return;
+    }
+    previewEl.innerHTML = selectedPhotoFiles.map((p, idx) => `
+        <div class="relative w-20 h-20 rounded-lg overflow-hidden border border-gray-200 shadow-sm group">
+            <img src="${p.previewUrl}" class="w-full h-full object-cover">
+            <button type="button" onclick="removePhoto(${idx})" class="absolute top-0.5 right-0.5 w-5 h-5 bg-black/60 text-white text-xs rounded-full flex items-center justify-center hover:bg-red-500 transition-colors">✕</button>
+        </div>
+    `).join('');
+}
+
+function removePhoto(index) {
+    selectedPhotoFiles.splice(index, 1);
+    renderPhotoPreview();
+    // sync ค่าใน input file ไม่ได้โดยตรง แต่ selectedPhotoFiles คือค่าจริงที่จะถูกส่งไปตอน submit
+}
 
 // รหัสผ่านสำหรับระบบช่าง (ค่าปัจจุบัน: 1234)
 const ENCRYPTED_PASS = "MTIzNA==";
@@ -263,17 +373,8 @@ function switchUserTab(tabName) {
     if (tabName === 'calendar') {
         const loadingEl = document.getElementById('calendar-loading');
         if (loadingEl) loadingEl.classList.remove('hidden');
-        Promise.all([fetchTickets(), fetchWebRequests()]).then(([tickets, webReqs]) => {
-            const normalizedWebReqs = webReqs.map(w => ({
-                ...w,
-                problem: w.problem || `🏢 ขอปรับปรุงอาคาร: ${w.purpose}`,
-                location: w.location || `แผนก ${w.dept}`,
-                floor: w.floor || '-',
-                date: w.date || `${w.deadline} 08:00:00`,
-                appointment_date: w.appointment_date || `${w.deadline} 08:00:00`
-            }));
-
-            allTicketsCache = [...tickets, ...normalizedWebReqs];
+        fetchTickets().then((tickets) => {
+            allTicketsCache = tickets;
 
             if (typeof renderPublicCalendar === 'function') renderPublicCalendar();
             if (typeof initCalendar === 'function') initCalendar(allTicketsCache);
@@ -328,7 +429,8 @@ document.getElementById('report-form').addEventListener('submit', async function
                 return `${dateInput.value} ${timeInput.value}`;
             }
             return '';
-        })()
+        })(),
+        photos: selectedPhotoFiles.map(p => ({ filename: p.filename, mimeType: p.mimeType, base64: p.base64 }))
     };
 
     try {
@@ -345,6 +447,8 @@ document.getElementById('report-form').addEventListener('submit', async function
             if (typeof clearAppointment === 'function') {
                 clearAppointment();
             }
+            selectedPhotoFiles = [];
+            renderPhotoPreview();
             switchUserTab('calendar');
         });
     } catch (err) {
@@ -364,8 +468,7 @@ async function searchTicket() {
 
     resultsDiv.innerHTML = '<div class="text-center py-8"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto"></div><p class="mt-2 text-gray-500">กำลังค้นหา...</p></div>';
 
-    const [tickets, webRequests] = await Promise.all([fetchTickets(), fetchWebRequests()]);
-    const allItems = [...tickets, ...webRequests];
+    const allItems = await fetchTickets();
 
     if (!query) {
         if(allItems.length > 0) {
@@ -436,6 +539,8 @@ function renderSearchResults(tickets, container) {
                  </div>
                  ` : ''}
 
+                 ${renderPhotoLinks(t.photos)}
+
                  ${t.appointment_date ? `
                  <div class="flex items-center gap-2 bg-emerald-50 text-emerald-700 px-3 py-2 rounded-lg text-sm font-semibold border border-emerald-100 shadow-sm">
                     📅 คิวเข้าซ่อม: ${formatDate(t.appointment_date)}
@@ -457,6 +562,48 @@ async function renderAdminView() {
     setupMonthFilter(allTicketsCache);
     setupTypeFilter(allTicketsCache);
     applyFilters();
+    renderRoomBookingsList();
+}
+
+async function renderRoomBookingsList() {
+    const listDiv = document.getElementById('room-bookings-list');
+    if (!listDiv) return;
+    listDiv.innerHTML = '<div class="text-center py-8"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto"></div></div>';
+
+    const bookings = await fetchRoomBookings();
+
+    if (bookings.length === 0) {
+        listDiv.innerHTML = '<div class="p-8 text-center text-gray-400">ยังไม่มีการจองห้องประชุม</div>';
+        return;
+    }
+
+    const sorted = bookings.slice().sort((a, b) => {
+        const dateA = new Date(`${a.booking_date}T${a.start_time || '00:00'}`);
+        const dateB = new Date(`${b.booking_date}T${b.start_time || '00:00'}`);
+        return dateA - dateB;
+    });
+
+    listDiv.innerHTML = sorted.map(b => `
+        <div class="p-4 flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center">
+            <div class="flex-1">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="font-bold text-gray-800">${b.room}</span>
+                    <span class="text-xs font-mono text-gray-400">#${b.id}</span>
+                    <span class="px-2 py-0.5 rounded text-xs font-bold ${b.mode === 'ออนไลน์' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}">${b.mode === 'ออนไลน์' ? '💻 ออนไลน์' : '🧑‍🤝‍🧑 ออฟไลน์'}</span>
+                </div>
+                <p class="text-sm text-gray-600 mt-1">👤 ${b.full_name} • 📞 ${b.contact}</p>
+                <p class="text-sm text-gray-600">📅 ${formatThaiDate(b.booking_date)} ⏰ ${b.start_time} - ${b.end_time} น.</p>
+                <p class="text-sm text-gray-500 italic mt-1">"${b.purpose}"</p>
+            </div>
+        </div>
+    `).join('');
+}
+
+function formatThaiDate(dateStr) {
+    if (!dateStr) return '-';
+    const d = new Date(dateStr + 'T00:00:00');
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
 function setupMonthFilter(data) {
@@ -564,6 +711,7 @@ function renderTicketList(tickets) {
                             "${t.details}"
                         </div>
                     ` : ''}
+                    ${renderPhotoLinks(t.photos)}
                     <p class="text-xs text-gray-400 mt-1">แจ้งเมื่อ: ${formatDate(t.date)}</p>
                 </div>
             </div>
@@ -606,6 +754,21 @@ function getStatusBadge(status) {
     if (status === 'in_progress') return '<span class="px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-bold border border-blue-200 whitespace-nowrap">🛠️ กำลังดำเนินการ</span>';
     if (status === 'completed') return '<span class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-lg text-xs font-bold border border-emerald-200 whitespace-nowrap">✅ เสร็จสิ้น</span>';
     return '<span class="px-2 py-1 bg-red-100 text-red-700 rounded-lg text-xs font-bold border border-red-200 whitespace-nowrap">❌ ยกเลิก</span>';
+}
+
+function renderPhotoLinks(photosField) {
+    if (!photosField) return '';
+    const links = String(photosField).split(',').map(s => s.trim()).filter(Boolean);
+    if (links.length === 0) return '';
+    return `
+        <div class="flex flex-wrap gap-2 my-2">
+            ${links.map((url, idx) => `
+                <a href="${url}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-xs font-semibold text-orange-600 bg-orange-50 border border-orange-100 px-2 py-1 rounded-lg hover:bg-orange-100 transition-colors">
+                    📷 รูปที่ ${idx + 1}
+                </a>
+            `).join('')}
+        </div>
+    `;
 }
 
 function getIcon(problem) {
@@ -720,84 +883,59 @@ function adminLogout() {
 }
 
 // ==========================================
-// 🌐 ระบบขอปรับปรุง / ต่อเติมอาคาร (ประยุกต์ใช้แทนสร้างเว็บ)
+// 🗓️ ระบบจองห้องประชุม
 // ==========================================
 
-function updateWebLevel() {
-  const boxes = document.querySelectorAll('.web-feature-cb');
-  let max = 0;
-  boxes.forEach(b => { if (b.checked) max = Math.max(max, parseInt(b.dataset.level)); });
-
-  const badge = document.getElementById('web-level-badge');
-  if (!badge) return;
-
-  if (max >= 3) {
-    badge.innerHTML = '<span class="px-3 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-lg border border-red-200">🔴 ใหญ่</span>';
-  } else if (max === 2) {
-    badge.innerHTML = '<span class="px-3 py-1 bg-amber-100 text-amber-700 text-xs font-bold rounded-lg border border-amber-200">🟡 ปานกลาง</span>';
-  } else {
-    badge.innerHTML = '<span class="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-lg border border-green-200">🟢 เล็กน้อย</span>';
-  }
-}
-
-document.getElementById('web-request-form').addEventListener('submit', async function(e) {
+document.getElementById('room-request-form').addEventListener('submit', async function(e) {
   e.preventDefault();
 
-  const selectedFeatures = [];
-  let maxLevel = 0;
-  document.querySelectorAll('.web-feature-cb').forEach(cb => {
-    if (cb.checked) {
-      selectedFeatures.push(cb.nextElementSibling.textContent.trim());
-      maxLevel = Math.max(maxLevel, parseInt(cb.dataset.level));
-    }
-  });
+  const modeInput = document.querySelector('input[name="room-mode"]:checked');
+  const startVal = document.getElementById('room-start').value;
+  const endVal = document.getElementById('room-end').value;
 
-  const levelMap = { 0: 'เล็กน้อย', 1: 'เล็กน้อย', 2: 'ปานกลาง', 3: 'ใหญ่' };
+  if (startVal >= endVal) {
+    Swal.fire({ icon: 'warning', title: 'ช่วงเวลาไม่ถูกต้อง', text: 'เวลาสิ้นสุดต้องอยู่หลังเวลาเริ่ม', confirmButtonColor: '#ea580c' });
+    return;
+  }
 
-  const webData = {
-    action: 'web_request',
-    id: 'AR' + Math.floor(Math.random() * 1000000).toString().padStart(6, '0'),
-    full_name: document.getElementById('web-name').value,
-    dept: document.getElementById('web-dept').value,
-    contact: document.getElementById('web-contact').value,
-    audience: document.getElementById('web-audience').value,
-    purpose: document.getElementById('web-purpose').value,
-    reference: document.getElementById('web-ref').value,
-    details: document.getElementById('web-details').value,
-    features: selectedFeatures.join(', '),
-    level: levelMap[maxLevel],
-    deadline: document.getElementById('web-deadline').value,
-    urgency: document.getElementById('web-urgency').value,
-    status: 'pending'
+  const bookingData = {
+    id: 'RB' + Math.floor(Math.random() * 1000000).toString().padStart(6, '0'),
+    full_name: document.getElementById('room-name').value,
+    contact: document.getElementById('room-contact').value,
+    room: document.getElementById('room-select').value,
+    booking_date: document.getElementById('room-date').value,
+    start_time: startVal,
+    end_time: endVal,
+    mode: modeInput ? modeInput.value : '',
+    purpose: document.getElementById('room-purpose').value
   };
 
   Swal.fire({
-    title: 'กำลังส่งข้อมูล...',
+    title: 'กำลังตรวจสอบคิวห้อง...',
     allowOutsideClick: false,
     didOpen: () => Swal.showLoading()
   });
 
-  try {
-    await fetch(API_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify(webData)
-    });
+  const result = await saveRoomBooking(bookingData);
 
+  if (result.status === 'success') {
     Swal.fire({
       icon: 'success',
-      title: 'ส่งคำขอสำเร็จ!',
-      html: `รหัสคำขอของคุณคือ:<br><b class="text-orange-600 text-2xl">${webData.id}</b><br>
-             <span class="text-sm text-gray-500">สเกลงาน: ${webData.level} • ทีมช่างจะติดต่อกลับเพื่อเข้าสำรวจพื้นที่เร็วๆ นี้</span>`,
+      title: 'จองห้องสำเร็จ!',
+      html: `รหัสการจองของคุณคือ:<br><b class="text-orange-600 text-2xl">${bookingData.id}</b><br>
+             <span class="text-sm text-gray-500">${bookingData.room} • ${bookingData.booking_date} เวลา ${bookingData.start_time}-${bookingData.end_time} น.</span>`,
       confirmButtonText: 'ตกลง',
       confirmButtonColor: '#ea580c'
     }).then(() => {
-      document.getElementById('web-request-form').reset();
-      updateWebLevel();
+      document.getElementById('room-request-form').reset();
+      closeRoomModal();
     });
-
-  } catch (err) {
-    Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'กรุณาลองใหม่อีกครั้ง' });
+  } else {
+    Swal.fire({
+      icon: 'error',
+      title: 'จองห้องไม่สำเร็จ',
+      text: result.message || 'ห้องนี้อาจถูกจองในช่วงเวลานี้แล้ว กรุณาเลือกเวลาหรือห้องอื่น',
+      confirmButtonColor: '#ea580c'
+    });
   }
 });
