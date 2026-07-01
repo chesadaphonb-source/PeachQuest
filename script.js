@@ -383,7 +383,134 @@ function switchUserTab(tabName) {
             console.error('โหลดข้อมูลไม่สำเร็จ', err);
             if (loadingEl) loadingEl.classList.add('hidden');
         });
+        renderRoomBookingsSidebar();
     }
+}
+
+// ==========================================
+// 🗓️ ปฏิทินคิวงานช่าง (FullCalendar) + มุมมองแบบการ์ด
+// ==========================================
+let fullCalendarInstance = null;
+
+function switchCalendarView(view) {
+    const calBtn = document.getElementById('view-cal-btn');
+    const gridBtn = document.getElementById('view-grid-btn');
+    const calendarEl = document.getElementById('calendar');
+    const gridEl = document.getElementById('calendar-grid-view');
+    if (!calBtn || !gridBtn || !calendarEl || !gridEl) return;
+
+    if (view === 'calendar') {
+        calendarEl.classList.remove('hidden');
+        gridEl.classList.add('hidden');
+        calBtn.classList.add('bg-white', 'shadow-sm', 'text-orange-600');
+        calBtn.classList.remove('text-gray-500');
+        gridBtn.classList.remove('bg-white', 'shadow-sm', 'text-orange-600');
+        gridBtn.classList.add('text-gray-500');
+        if (fullCalendarInstance) {
+            fullCalendarInstance.updateSize();
+        }
+    } else {
+        calendarEl.classList.add('hidden');
+        gridEl.classList.remove('hidden');
+        gridBtn.classList.add('bg-white', 'shadow-sm', 'text-orange-600');
+        gridBtn.classList.remove('text-gray-500');
+        calBtn.classList.remove('bg-white', 'shadow-sm', 'text-orange-600');
+        calBtn.classList.add('text-gray-500');
+        if (typeof renderPublicCalendar === 'function') renderPublicCalendar();
+    }
+}
+
+function initCalendar(tickets) {
+    const calendarEl = document.getElementById('calendar');
+    if (!calendarEl || typeof FullCalendar === 'undefined') return;
+
+    const events = (tickets || [])
+        .filter(t => t.status !== 'cancelled' && (t.appointment_date || t.date))
+        .map(t => {
+            const isAppointment = !!t.appointment_date;
+            const startRaw = (t.appointment_date || t.date || '').replace(' ', 'T');
+            let color = '#f43f5e'; // ด่วน/walk-in = rose
+            if (t.status === 'completed') color = '#10b981'; // เสร็จสิ้น = emerald
+            else if (isAppointment) color = '#3b82f6'; // นัดหมาย = blue
+
+            return {
+                title: `${getIcon(t.problem)} ${t.problem}`,
+                start: startRaw,
+                color: color,
+                extendedProps: { ticket: t }
+            };
+        });
+
+    if (fullCalendarInstance) {
+        fullCalendarInstance.removeAllEventSources();
+        fullCalendarInstance.addEventSource(events);
+        fullCalendarInstance.updateSize();
+        return;
+    }
+
+    fullCalendarInstance = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        locale: 'th',
+        height: 'auto',
+        headerToolbar: { left: 'prev,next today', center: 'title', right: '' },
+        events: events,
+        eventClick: function (info) {
+            const t = info.event.extendedProps.ticket;
+            if (!t) return;
+            Swal.fire({
+                title: t.problem,
+                html: `
+                    <div class="text-left text-sm text-gray-600 space-y-1">
+                        <p>🆔 ${t.id}</p>
+                        <p>📍 ${t.location} ชั้น ${t.floor}</p>
+                        <p>👤 ${t.full_name}</p>
+                        <p>${getStatusBadge(t.status)}</p>
+                    </div>
+                `,
+                confirmButtonText: 'ปิด',
+                confirmButtonColor: '#ea580c'
+            });
+        }
+    });
+    fullCalendarInstance.render();
+}
+
+// ==========================================
+// 🗓️ กล่องกำหนดการจองห้องประชุม (แสดงในแท็บตารางงานช่าง)
+// ==========================================
+async function renderRoomBookingsSidebar() {
+    const container = document.getElementById('room-bookings-sidebar');
+    if (!container) return;
+    container.innerHTML = '<div class="text-center py-8 text-gray-300 text-sm">กำลังโหลด...</div>';
+
+    const bookings = await fetchRoomBookings();
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    const upcoming = bookings
+        .filter(b => b.booking_date >= todayStr)
+        .sort((a, b) => {
+            const dateA = new Date(`${a.booking_date}T${a.start_time || '00:00'}`);
+            const dateB = new Date(`${b.booking_date}T${b.start_time || '00:00'}`);
+            return dateA - dateB;
+        });
+
+    if (upcoming.length === 0) {
+        container.innerHTML = '<div class="text-center py-8 text-gray-300 text-sm">📅 ยังไม่มีคิวจองห้องประชุม</div>';
+        return;
+    }
+
+    container.innerHTML = upcoming.map(b => `
+        <div class="p-3 rounded-xl border border-orange-100 bg-orange-50/40">
+            <div class="flex items-center justify-between mb-1">
+                <span class="text-sm font-bold text-gray-800">${b.room}</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded ${b.mode === 'ออนไลน์' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}">${b.mode === 'ออนไลน์' ? '💻 ออนไลน์' : '🧑‍🤝‍🧑 ออฟไลน์'}</span>
+            </div>
+            <p class="text-xs text-gray-500">📅 ${formatThaiDate(b.booking_date)}</p>
+            <p class="text-xs text-gray-500">⏰ ${b.start_time} - ${b.end_time} น.</p>
+            <p class="text-xs text-gray-600 mt-1 line-clamp-1">📝 ${b.purpose}</p>
+            <p class="text-[11px] text-gray-400 mt-1">โดย ${b.full_name}</p>
+        </div>
+    `).join('');
 }
 
 // --- ส่วนจัดการฟอร์ม ---
