@@ -45,7 +45,7 @@ body {
 
 /* --- Gradient Background --- */
 .gradient-bg {
-    background: linear-gradient(135deg, #10b981 0%, #0d9488 100%);
+    background: linear-gradient(135deg, #f97316 0%, #d97706 100%);
     color: white;
 }
 
@@ -69,7 +69,7 @@ body {
 .loader {
   border: 3px solid #f3f3f3;
   border-radius: 50%;
-  border-top: 3px solid #10b981;
+  border-top: 3px solid #f97316;
   width: 24px;
   height: 24px;
   animation: spin 1s linear infinite;
@@ -84,7 +84,7 @@ body {
    ส่วนเสริมความสมบูรณ์ (Flatpickr & Mobile)
    ========================================== */
 
-/* 1. ปรับแต่ง Flatpickr (ปฏิทิน) ให้เป็นสีเขียว */
+/* 1. ปรับแต่ง Flatpickr (ปฏิทิน) ให้เป็นสีส้ม */
 .flatpickr-calendar {
     font-family: 'Sarabun', sans-serif !important;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
@@ -92,11 +92,11 @@ body {
     border-radius: 1rem !important;
 }
 .flatpickr-day.selected, .flatpickr-day.selected:hover {
-    background: #10b981 !important;
-    border-color: #10b981 !important;
+    background: #f97316 !important;
+    border-color: #f97316 !important;
 }
 .flatpickr-time input:hover, .flatpickr-time .flatpickr-am-pm:hover, .flatpickr-time input:focus, .flatpickr-time .flatpickr-am-pm:focus {
-    background: #f0fdf4 !important;
+    background: #fff7ed !important;
 }
 
 /* 2. ระบบ Responsive สำหรับมือถือ */
@@ -139,14 +139,14 @@ button:disabled {
 .line-clamp-1 {
     display: -webkit-box;
     -webkit-line-clamp: 1;
-    -webkit-box-orient: vertical;  
+    -webkit-box-orient: vertical;
     overflow: hidden;
 }
 
 /* 5. เอฟเฟกต์ Input Focus */
 input:focus, select:focus, textarea:focus {
-    border-color: #10b981 !important;
-    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15) !important;
+    border-color: #f97316 !important;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15) !important;
     outline: none;
 }
 
@@ -203,13 +203,13 @@ input:focus, select:focus, textarea:focus {
     font-family: 'Prompt', sans-serif !important;
     font-size: 1.5rem !important;
     font-weight: 700;
-    color: #065f46; /* เขียวเข้ม */
+    color: #9a3412; /* ส้มเข้ม (orange-800) */
 }
 
 /* 3. ปุ่มกดต่างๆ (วันนี้, <, >, เดือน, รายการ) */
 .fc .fc-button-primary {
-    background-color: #10b981 !important; /* สีเขียวหลัก */
-    border-color: #10b981 !important;
+    background-color: #f97316 !important; /* สีส้มหลัก */
+    border-color: #f97316 !important;
     border-radius: 0.5rem !important; /* ความมน */
     font-family: 'Prompt', sans-serif;
     font-weight: 500;
@@ -219,40 +219,40 @@ input:focus, select:focus, textarea:focus {
 }
 
 .fc .fc-button-primary:hover {
-    background-color: #059669 !important; /* เขียวเข้มตอนเอาเมาส์ชี้ */
-    border-color: #059669 !important;
+    background-color: #ea580c !important; /* ส้มเข้มตอนเอาเมาส์ชี้ */
+    border-color: #ea580c !important;
     transform: translateY(-1px);
     box-shadow: 0 4px 6px rgba(0,0,0,0.15);
 }
 
 .fc .fc-button-primary:disabled {
-    background-color: #a7f3d0 !important;
-    border-color: #a7f3d0 !important;
+    background-color: #fed7aa !important;
+    border-color: #fed7aa !important;
     opacity: 0.7;
 }
 
 /* ปุ่มที่ถูกกดอยู่ (Active) */
-.fc .fc-button-primary:not(:disabled).fc-button-active, 
+.fc .fc-button-primary:not(:disabled).fc-button-active,
 .fc .fc-button-primary:not(:disabled):active {
-    background-color: #047857 !important; /* เขียวเข้มมาก */
-    border-color: #047857 !important;
+    background-color: #c2410c !important; /* ส้มเข้มมาก */
+    border-color: #c2410c !important;
 }
 
 /* 4. หัวตาราง (อา. จ. อ.) */
 .fc .fc-col-header-cell-cushion {
-    color: #047857; /* ตัวหนังสือเขียวเข้ม */
+    color: #c2410c; /* ตัวหนังสือส้มเข้ม */
     font-weight: 600;
     padding: 10px 0 !important;
     text-decoration: none !important;
 }
 .fc .fc-col-header-cell {
-    background-color: #f0fdf4; /* พื้นหลังหัวตารางสีเขียวอ่อนๆ */
-    border-bottom: 2px solid #bbf7d0 !important;
+    background-color: #fff7ed; /* พื้นหลังหัวตารางสีส้มอ่อนๆ */
+    border-bottom: 2px solid #fed7aa !important;
 }
 
 /* 5. ช่องวันที่ปัจจุบัน (Today Highlight) */
 .fc .fc-day-today {
-    background-color: #ecfdf5 !important; /* สีพื้นหลังเขียวจางๆ */
+    background-color: #fff7ed !important; /* สีพื้นหลังส้มจางๆ */
 }
 
 /* 6. เส้นตาราง */
@@ -268,7 +268,7 @@ input:focus, select:focus, textarea:focus {
     padding: 8px !important;
 }
 .fc .fc-daygrid-day-number:hover {
-    color: #10b981; /* เอาเมาส์ชี้เลขวันที่แล้วเป็นสีเขียว */
+    color: #f97316; /* เอาเมาส์ชี้เลขวันที่แล้วเป็นสีส้ม */
 }
 
 /* 8. ปรับจุดเหตุการณ์ (Events) ให้ดูดีขึ้น */
@@ -335,13 +335,13 @@ input:focus, select:focus, textarea:focus {
     .fc-toolbar-chunk {
         display: flex !important;
         justify-content: center !important;
-        flex-wrap: wrap; 
+        flex-wrap: wrap;
         width: 100%;
     }
 
     /* 3. ลดขนาดฟอนต์ชื่อเดือนให้เล็กลงหน่อย จะได้ไม่ล้นจอ */
     .fc .fc-toolbar-title {
-        font-size: 1.25rem !important; 
+        font-size: 1.25rem !important;
         text-align: center;
     }
 
@@ -352,7 +352,7 @@ input:focus, select:focus, textarea:focus {
     }
 
     /* 5. ลดขนาดตัวหนังสือในช่องวันที่ (คิวงาน) ไม่ให้ล้นขอบ */
-    .fc .fc-event-title, 
+    .fc .fc-event-title,
     .fc .fc-daygrid-event-dot {
         font-size: 0.75rem !important;
     }
@@ -364,7 +364,7 @@ input:focus, select:focus, textarea:focus {
 @media (max-width: 768px) {
     /* 1. บังคับให้ข้อความยอมปัดขึ้นบรรทัดใหม่ ไม่โดนซ่อน */
     .fc .fc-daygrid-event {
-        white-space: normal !important; 
+        white-space: normal !important;
         word-wrap: break-word !important;
         align-items: flex-start !important;
         padding: 2px !important;
@@ -382,7 +382,7 @@ input:focus, select:focus, textarea:focus {
         font-size: 9px !important;
         color: #6b7280 !important; /* สีเทาให้เวลาดูไม่แย่งซีน */
     }
-    
+
     /* 🟢 ซ่อมแซมจุดที่ขาดหาย: เติมตัวเต็มให้เสร็จสิ้นเรียบร้อย */
     .fc .fc-event-title {
         font-size: 9.5px !important;
