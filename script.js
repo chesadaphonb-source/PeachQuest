@@ -1,5 +1,8 @@
-// ⚠️ อัปเดตเป็น URL ฝั่งงานช่างเรียบร้อยแล้ว ✅
-const API_URL = 'https://script.google.com/macros/s/AKfycbykZTLrbAQnDfGVl8IyVXIiZbspxqcj2DggS2bFzSilzIM4EonuVBVQnNEnMwMwA68/exec'; 
+// ⚠️ อัปเดต URL นี้เป็น URL ของ Web App ที่ deploy จาก Code.gs ใหม่ทุกครั้งที่ deploy ใหม่
+const API_URL = 'https://script.google.com/macros/s/AKfycbykZTLrbAQnDfGVl8IyVXIiZbspxqcj2DggS2bFzSilzIM4EonuVBVQnNEnMwMwA68/exec';
+
+// --- ช่างผู้รับผิดชอบ (ระบบนี้มีช่างคนเดียว จึง auto-assign ให้ทันทีตอนกด "รับเรื่อง") ---
+const TECHNICIAN_NAME = 'นายพีรภัทร ด้วงสโมสร';
 
 // --- ข้อมูลชั้นของแต่ละอาคาร ---
 const buildingData = {
@@ -27,23 +30,19 @@ function updateFloors() {
     const floorSelect = document.getElementById("floor");
     const selectedBuilding = buildingSelect.value;
 
-    // เคลียร์ตัวเลือกเก่า
     floorSelect.innerHTML = '<option value="" disabled selected>-- กรุณาเลือกชั้น --</option>';
 
     if (selectedBuilding && buildingData[selectedBuilding]) {
-        // เปิดให้เลือกชั้นได้
         floorSelect.disabled = false;
         floorSelect.classList.remove("bg-gray-50", "cursor-not-allowed");
 
-        // วนลูปสร้างตัวเลือกชั้นตามข้อมูลที่เตรียมไว้
         buildingData[selectedBuilding].forEach(floorName => {
             const option = document.createElement("option");
-            option.value = floorName; // ค่าที่จะส่งไป Google Sheet
-            option.textContent = floorName; // ข้อความที่แสดงในเว็บ
+            option.value = floorName;
+            option.textContent = floorName;
             floorSelect.appendChild(option);
         });
     } else {
-        // ถ้าไม่ได้เลือกอาคาร ให้ปิดช่องเลือกชั้น
         floorSelect.disabled = true;
         floorSelect.classList.add("bg-gray-50", "cursor-not-allowed");
         floorSelect.innerHTML = '<option value="" disabled selected>-- กรุณาเลือกอาคารก่อน --</option>';
@@ -61,7 +60,7 @@ async function fetchTickets() {
   try {
     const response = await fetch(API_URL);
     const data = await response.json();
-    return Array.isArray(data) ? data : []; 
+    return Array.isArray(data) ? data : [];
   } catch (error) {
     console.error('Error fetching data:', error);
     return [];
@@ -82,23 +81,23 @@ async function fetchWebRequests() {
 async function saveTicketToSheet(ticketData) {
     await fetch(API_URL, {
         method: 'POST',
-        mode: 'no-cors', 
+        mode: 'no-cors',
         headers: {
-            "Content-Type": "text/plain", 
+            "Content-Type": "text/plain",
         },
         body: JSON.stringify({ action: 'create', ...ticketData })
     });
-    return true; 
+    return true;
 }
 
-async function updateStatusInSheet(id, newStatus) {
+async function updateStatusInSheet(id, newStatus, technician) {
     await fetch(API_URL, {
         method: 'POST',
         mode: 'no-cors',
         headers: {
             "Content-Type": "text/plain",
         },
-        body: JSON.stringify({ action: 'update', id: id, status: newStatus })
+        body: JSON.stringify({ action: 'update', id: id, status: newStatus, technician: technician || '' })
     });
     return true;
 }
@@ -109,7 +108,6 @@ async function updateStatusInSheet(id, newStatus) {
 let currentView = 'user';
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. ฟังก์ชันจำกัดเบอร์โทร
     const contactInput = document.getElementById('contact');
 
     const monthFilter = document.getElementById('monthFilter');
@@ -122,7 +120,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 2. ฟังก์ชันค้นหาด้วย Enter
     const searchInput = document.getElementById('search-input');
     if(searchInput) {
         searchInput.addEventListener('keypress', (e) => {
@@ -130,39 +127,34 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 🟢 3. ตั้งค่า Flatpickr (วันที่)
     flatpickr("#input_date", {
-        dateFormat: "Y-m-d",     
-        altInput: true,          
-        altFormat: "j F Y",      
-        minDate: "today",        
-        locale: "th",            
-        disableMobile: true      
+        dateFormat: "Y-m-d",
+        altInput: true,
+        altFormat: "j F Y",
+        minDate: "today",
+        locale: "th",
+        disableMobile: true
     });
 
-    // 🟢 4. ตั้งค่า Flatpickr (เวลา)
     flatpickr("#input_time", {
-      enableTime: true,       
-      noCalendar: true,       
-      dateFormat: "H:i",      
-      time_24hr: true,        
-      altInput: true,         
-      altFormat: "H:i น.",    
-      disableMobile: true     
+      enableTime: true,
+      noCalendar: true,
+      dateFormat: "H:i",
+      time_24hr: true,
+      altInput: true,
+      altFormat: "H:i น.",
+      disableMobile: true
     });
 
-    // 🟢 5. เช็คว่าเคย Login ค้างไว้ไหม
     const isLoggedIn = localStorage.getItem('isAdminLoggedIn');
     if (isLoggedIn === 'true') {
         switchView('admin');
     }
 
-    // ผูก event กับ checkbox ทุกตัว
     document.querySelectorAll('.web-feature-cb').forEach(cb => {
       cb.addEventListener('change', updateWebLevel);
     });
-    
-    // จำกัดเบอร์โทรให้เป็นตัวเลขเท่านั้น
+
     const webContactInput = document.getElementById('web-contact');
     if (webContactInput) {
       webContactInput.addEventListener('input', function() {
@@ -172,7 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // รหัสผ่านสำหรับระบบช่าง (ค่าปัจจุบัน: 1234)
-const ENCRYPTED_PASS = "MTIzNA=="; 
+const ENCRYPTED_PASS = "MTIzNA==";
 
 function checkAdminPassword() {
     const isLoggedIn = localStorage.getItem('isAdminLoggedIn');
@@ -183,7 +175,7 @@ function checkAdminPassword() {
     }
 
     Swal.fire({
-        title: '🔐 ยืนยันตัวตน',
+        title: '🔧 ยืนยันตัวตนช่าง',
         text: 'กรุณากรอกรหัสผ่านสำหรับเจ้าหน้าที่ช่าง',
         input: 'password',
         inputAttributes: {
@@ -193,10 +185,10 @@ function checkAdminPassword() {
         showCancelButton: true,
         confirmButtonText: 'เข้าสู่ระบบ',
         cancelButtonText: 'ยกเลิก',
-        confirmButtonColor: '#10b981', 
+        confirmButtonColor: '#ea580c',
         showLoaderOnConfirm: true,
         preConfirm: (password) => {
-            const inputEncrypted = btoa(password); 
+            const inputEncrypted = btoa(password);
             if (inputEncrypted !== ENCRYPTED_PASS) {
                 Swal.showValidationMessage('❌ รหัสผ่านไม่ถูกต้อง')
             }
@@ -217,7 +209,7 @@ function checkAdminPassword() {
             });
             Toast.fire({
                 icon: 'success',
-                title: 'เข้าสู่ระบบเรียบร้อย'
+                title: `เข้าสู่ระบบช่างเรียบร้อย (${TECHNICIAN_NAME})`
             });
         }
     });
@@ -232,16 +224,16 @@ function switchView(view) {
     const btnAdmin = document.getElementById('btn-admin');
 
     if (view === 'user') {
-        btnUser.classList.add('bg-emerald-600', 'text-white');
+        btnUser.classList.add('bg-orange-600', 'text-white');
         btnUser.classList.remove('bg-white', 'text-gray-600');
         btnAdmin.classList.add('bg-white', 'text-gray-600');
-        btnAdmin.classList.remove('bg-emerald-600', 'text-white');
+        btnAdmin.classList.remove('bg-orange-600', 'text-white');
     } else {
-        btnAdmin.classList.add('bg-emerald-600', 'text-white');
+        btnAdmin.classList.add('bg-orange-600', 'text-white');
         btnAdmin.classList.remove('bg-white', 'text-gray-600');
         btnUser.classList.add('bg-white', 'text-gray-600');
-        btnUser.classList.remove('bg-emerald-600', 'text-white');
-        renderAdminView(); 
+        btnUser.classList.remove('bg-orange-600', 'text-white');
+        renderAdminView();
     }
 }
 
@@ -253,7 +245,7 @@ function switchUserTab(tabName) {
     ['form', 'calendar', 'track'].forEach(t => {
         const btn = document.getElementById('tab-' + t);
         if (btn) {
-            btn.classList.remove('bg-white', 'text-emerald-600', 'ring-2', 'ring-emerald-50');
+            btn.classList.remove('bg-white', 'text-orange-600', 'ring-2', 'ring-orange-50');
             btn.classList.add('bg-gray-100', 'text-gray-500');
         }
     });
@@ -262,29 +254,28 @@ function switchUserTab(tabName) {
     const activeBtn = document.getElementById('tab-' + tabName);
 
     if (activeSection) activeSection.classList.remove('hidden');
-    
+
     if (activeBtn) {
         activeBtn.classList.remove('bg-gray-100', 'text-gray-500');
-        activeBtn.classList.add('bg-white', 'text-emerald-600', 'ring-2', 'ring-emerald-50');
+        activeBtn.classList.add('bg-white', 'text-orange-600', 'ring-2', 'ring-orange-50');
     }
 
     if (tabName === 'calendar') {
         const loadingEl = document.getElementById('calendar-loading');
         if (loadingEl) loadingEl.classList.remove('hidden');
         Promise.all([fetchTickets(), fetchWebRequests()]).then(([tickets, webReqs]) => {
-            // 🟢 ปรับข้อความปัญหาตารางฝั่ง Special Request ให้เป็นงานสถานที่
             const normalizedWebReqs = webReqs.map(w => ({
                 ...w,
-                problem: w.problem || `🏢 ขอปรับปรุงอาคาร: ${w.purpose}`, 
-                location: w.location || `แผนก ${w.dept}`,            
+                problem: w.problem || `🏢 ขอปรับปรุงอาคาร: ${w.purpose}`,
+                location: w.location || `แผนก ${w.dept}`,
                 floor: w.floor || '-',
-                date: w.date || `${w.deadline} 08:00:00`,            
-                appointment_date: w.appointment_date || `${w.deadline} 08:00:00` 
+                date: w.date || `${w.deadline} 08:00:00`,
+                appointment_date: w.appointment_date || `${w.deadline} 08:00:00`
             }));
-    
+
             allTicketsCache = [...tickets, ...normalizedWebReqs];
-            
-            if (typeof renderPublicCalendar === 'function') renderPublicCalendar(); 
+
+            if (typeof renderPublicCalendar === 'function') renderPublicCalendar();
             if (typeof initCalendar === 'function') initCalendar(allTicketsCache);
             if (loadingEl) loadingEl.classList.add('hidden');
         }).catch(err => {
@@ -300,8 +291,9 @@ document.getElementById('report-form').addEventListener('submit', async function
 
     const nameInput = document.getElementById('full-name');
     const contactInput = document.getElementById('contact');
+    const emailInput = document.getElementById('email');
     const locationInput = document.getElementById('location');
-    const floorInput = document.getElementById('floor'); 
+    const floorInput = document.getElementById('floor');
     const problemInput = document.getElementById('problem');
     const detailsInput = document.getElementById('details');
     const dateInput = document.getElementById('input_date');
@@ -309,7 +301,7 @@ document.getElementById('report-form').addEventListener('submit', async function
 
     if (!nameInput || !problemInput) {
         console.error("หา Input ไม่เจอ! กรุณาเช็ค id ในไฟล์ HTML");
-        return; 
+        return;
     }
 
     Swal.fire({
@@ -319,23 +311,23 @@ document.getElementById('report-form').addEventListener('submit', async function
         didOpen: () => { Swal.showLoading(); }
     });
 
-    // 🟢 2. เปลี่ยนรหัสตั๋วระบบช่างนำหน้าด้วย MT (Maintenance)
     const ticketId = 'MT' + Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
 
     const formData = {
         id: ticketId,
         full_name: nameInput.value,
         contact: contactInput ? contactInput.value : '-',
+        email: emailInput ? emailInput.value.trim() : '',
         location: locationInput ? locationInput.value : '-',
         floor: floorInput ? floorInput.value : '-',
-        room: document.getElementById('room') ? document.getElementById('room').value : '',  
+        room: document.getElementById('room') ? document.getElementById('room').value : '',
         problem: problemInput.value,
         details: detailsInput ? detailsInput.value : '-',
         appointment_date: (function() {
             if (dateInput && timeInput && dateInput.value && timeInput.value) {
-                return `${dateInput.value} ${timeInput.value}`; 
+                return `${dateInput.value} ${timeInput.value}`;
             }
-            return ''; 
+            return '';
         })()
     };
 
@@ -345,21 +337,21 @@ document.getElementById('report-form').addEventListener('submit', async function
         Swal.fire({
             icon: 'success',
             title: 'ส่งแจ้งซ่อมบำรุงสำเร็จ!',
-            html: `รหัสติดตามของคุณคือ: <br><b class="text-emerald-600 text-3xl">${ticketId}</b><br><span class="text-sm text-gray-500">แคปหน้าจอนี้ไว้ตรวจสอบสถานะงานซ่อม</span>`,
+            html: `รหัสติดตามของคุณคือ: <br><b class="text-orange-600 text-3xl">${ticketId}</b><br><span class="text-sm text-gray-500">แคปหน้าจอนี้ไว้ตรวจสอบสถานะงานซ่อม</span>`,
             confirmButtonText: 'ตกลง',
-            confirmButtonColor: '#10b981'
+            confirmButtonColor: '#ea580c'
         }).then(() => {
             document.getElementById('report-form').reset();
             if (typeof clearAppointment === 'function') {
-                clearAppointment(); 
+                clearAppointment();
             }
             switchUserTab('calendar');
         });
     } catch (err) {
         console.error(err);
         Swal.fire({
-            icon: 'error', 
-            title: 'เกิดข้อผิดพลาด', 
+            icon: 'error',
+            title: 'เกิดข้อผิดพลาด',
             text: 'ไม่สามารถส่งข้อมูลได้ กรุณาลองใหม่อีกครั้ง'
         });
     }
@@ -370,7 +362,7 @@ async function searchTicket() {
     const query = document.getElementById('search-input').value.toLowerCase().trim();
     const resultsDiv = document.getElementById('search-results');
 
-    resultsDiv.innerHTML = '<div class="text-center py-8"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto"></div><p class="mt-2 text-gray-500">กำลังค้นหา...</p></div>';
+    resultsDiv.innerHTML = '<div class="text-center py-8"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto"></div><p class="mt-2 text-gray-500">กำลังค้นหา...</p></div>';
 
     const [tickets, webRequests] = await Promise.all([fetchTickets(), fetchWebRequests()]);
     const allItems = [...tickets, ...webRequests];
@@ -404,7 +396,7 @@ function renderSearchResults(tickets, container) {
 
     container.innerHTML = tickets.map(t => `
         <div class="bg-white rounded-xl p-4 border border-gray-200 mb-4 shadow-sm relative overflow-hidden">
-            
+
             <div class="flex justify-between items-center mb-3 pb-2 border-b border-gray-50">
                 <span class="font-mono text-xs font-bold text-gray-400 tracking-wider">#${t.id}</span>
                 ${getStatusBadge(t.status)}
@@ -417,14 +409,14 @@ function renderSearchResults(tickets, container) {
 
                 <div class="flex-1 min-w-0">
                     <h4 class="font-bold text-gray-800 text-base mb-1">${t.problem}</h4>
-                    
+
                     <div class="text-sm text-gray-600 space-y-1">
                         <p class="flex items-start gap-1.5">
-                            <span class="text-gray-400 mt-0.5 text-xs">📍</span> 
+                            <span class="text-gray-400 mt-0.5 text-xs">📍</span>
                             <span class="leading-snug">${t.location} <span class="text-gray-300">|</span> ชั้น ${t.floor}</span>
                         </p>
                         <p class="flex items-start gap-1.5">
-                            <span class="text-gray-400 mt-0.5 text-xs">👤</span> 
+                            <span class="text-gray-400 mt-0.5 text-xs">👤</span>
                             <span class="leading-snug">${t.full_name}</span>
                         </p>
                     </div>
@@ -432,11 +424,17 @@ function renderSearchResults(tickets, container) {
             </div>
 
             <div class="mt-3 pl-14"> <p class="text-xs text-gray-400 mb-2">แจ้งเมื่อ: ${formatDate(t.date)}</p>
-                 
+
                  ${t.details ? `
                  <div class="text-xs text-gray-500 bg-gray-50 p-2 rounded border border-gray-100 italic mb-2">
                     "${t.details}"
                  </div>` : ''}
+
+                 ${t.assigned_technician ? `
+                 <div class="flex items-center gap-2 bg-orange-50 text-orange-700 px-3 py-1.5 rounded-lg text-xs font-semibold border border-orange-100 mb-2">
+                    🔧 ช่างผู้รับผิดชอบ: ${t.assigned_technician}
+                 </div>
+                 ` : ''}
 
                  ${t.appointment_date ? `
                  <div class="flex items-center gap-2 bg-emerald-50 text-emerald-700 px-3 py-2 rounded-lg text-sm font-semibold border border-emerald-100 shadow-sm">
@@ -454,7 +452,7 @@ function renderSearchResults(tickets, container) {
 // ==========================================
 
 async function renderAdminView() {
-    document.getElementById('tickets-list').innerHTML = '<div class="text-center py-12"><div class="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-600 mx-auto"></div><p class="mt-4 text-gray-500">กำลังโหลดข้อมูล...</p></div>';
+    document.getElementById('tickets-list').innerHTML = '<div class="text-center py-12"><div class="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-600 mx-auto"></div><p class="mt-4 text-gray-500">กำลังโหลดข้อมูล...</p></div>';
     allTicketsCache = await fetchTickets();
     setupMonthFilter(allTicketsCache);
     setupTypeFilter(allTicketsCache);
@@ -503,7 +501,7 @@ function setupTypeFilter(data) {
     sortedTypes.forEach(type => {
         const option = document.createElement('option');
         option.value = type;
-        option.text = `${getIcon(type)} ${type}`; 
+        option.text = `${getIcon(type)} ${type}`;
         typeSelect.appendChild(option);
     });
 }
@@ -540,19 +538,25 @@ function renderTicketList(tickets) {
     }
     listDiv.innerHTML = tickets.map(t => `
         <div class="p-4 hover:bg-gray-50 transition-colors flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center border-b border-gray-100 last:border-0">
-            <div class="flex items-start gap-3 w-full sm:w-2/3"> <div class="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-lg border border-emerald-100 flex-shrink-0">${getIcon(t.problem)}</div>
+            <div class="flex items-start gap-3 w-full sm:w-2/3"> <div class="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center text-lg border border-orange-100 flex-shrink-0">${getIcon(t.problem)}</div>
                 <div class="flex-1">
                     <div class="flex items-center gap-2">
                         <span class="font-bold text-gray-800">${t.problem}</span>
                         <span class="text-xs font-mono text-gray-400">#${t.id}</span>
                     </div>
-                    
+
+                    ${t.assigned_technician ? `
+                        <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-orange-100 text-orange-700 text-xs font-bold my-1">
+                            🔧 ผู้รับผิดชอบ: ${t.assigned_technician}
+                        </div>
+                    ` : ''}
+
                     ${t.appointment_date ? `
                         <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 text-xs font-bold my-1">
                             📅 คิวเข้าซ่อม: ${formatDate(t.appointment_date)}
                         </div>
                     ` : ''}
-                    
+
                     <p class="text-sm text-gray-600">${t.location} ชั้น ${t.floor} • ${t.full_name}</p>
 
                     ${t.details ? `
@@ -582,13 +586,18 @@ function renderTicketList(tickets) {
 async function changeStatus(id, newStatus) {
     Swal.fire({ title: 'กำลังอัปเดต...', didOpen: () => Swal.showLoading() });
     try {
-        await updateStatusInSheet(id, newStatus);
+        // ตอนกด "รับเรื่อง" ระบบจะผูกชื่อช่างที่ล็อกอินอยู่ให้อัตโนมัติ (ระบบนี้มีช่างคนเดียว)
+        const technician = (newStatus === 'in_progress') ? TECHNICIAN_NAME : undefined;
+        await updateStatusInSheet(id, newStatus, technician);
         setTimeout(async () => {
             Swal.close();
             allTicketsCache = await fetchTickets();
-            applyFilters(); 
-            Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 }).fire({ icon: 'success', title: 'เรียบร้อย' });
-        }, 1500); 
+            applyFilters();
+            const msg = newStatus === 'completed'
+                ? 'ปิดงานเรียบร้อย (ส่งอีเมลแจ้งผู้แจ้งแล้ว ถ้ามีอีเมลในระบบ)'
+                : 'เรียบร้อย';
+            Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 }).fire({ icon: 'success', title: msg });
+        }, 1500);
     } catch (error) { Swal.close(); renderAdminView(); }
 }
 
@@ -599,15 +608,14 @@ function getStatusBadge(status) {
     return '<span class="px-2 py-1 bg-red-100 text-red-700 rounded-lg text-xs font-bold border border-red-200 whitespace-nowrap">❌ ยกเลิก</span>';
 }
 
-// 🟢 3. เปลี่ยนชุดไอคอนประเภทงานซ่อมเป็นของฝั่งงานช่างบำรุง
 function getIcon(problem) {
     const icons = {
-        'Electricity': '⚡',   
-        'Plumbing': '🚰',   
-        'AirConditioner': '❄️',    
-        'Carpentry': '🪚',    
-        'Building': '🧱',    
-        'Other': '📦'       
+        'Electricity': '⚡',
+        'Plumbing': '🚰',
+        'AirConditioner': '❄️',
+        'Carpentry': '🪚',
+        'Building': '🧱',
+        'Other': '📦'
     };
     return icons[problem] || '🔧';
 }
@@ -616,19 +624,19 @@ function formatDate(dateString) {
     if (!dateString) return '-';
     const normalized = String(dateString).replace(' ', 'T');
     const d = new Date(normalized);
-    if (isNaN(d.getTime())) return dateString; 
-    return d.toLocaleString('th-TH', { 
-        year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+    if (isNaN(d.getTime())) return dateString;
+    return d.toLocaleString('th-TH', {
+        year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
     }) + ' น.';
 }
 
 async function renderPublicCalendar() {
     const container = document.getElementById('calendar-grid');
-    container.innerHTML = '<div class="col-span-full text-center py-12"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto"></div><p class="mt-2 text-gray-500">กำลังดึงตารางงาน...</p></div>';
+    container.innerHTML = '<div class="col-span-full text-center py-12"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto"></div><p class="mt-2 text-gray-500">กำลังดึงตารางงาน...</p></div>';
 
     let tickets = allTicketsCache.length > 0 ? allTicketsCache : await fetchTickets();
 
-    const upcoming = tickets.filter(t => 
+    const upcoming = tickets.filter(t =>
         t.status !== 'cancelled' && t.status !== 'completed'
     ).sort((a, b) => {
         const dateA = new Date(a.appointment_date || a.date);
@@ -655,11 +663,11 @@ async function renderPublicCalendar() {
         return `
         <div class="relative bg-white p-4 rounded-xl border ${isAppointment ? 'border-emerald-200 bg-emerald-50/30' : 'border-blue-100 bg-blue-50/30'} shadow-sm hover:shadow-md transition-all">
             <div class="flex items-start gap-3">
-                
+
                 <div class="flex flex-col items-center justify-center bg-white border border-gray-200 rounded-lg p-1 min-w-[70px] h-[85px]">
                     <span class="text-xs text-gray-500 -mb-1">${month}</span>
                     <span class="text-2xl font-bold ${isAppointment ? 'text-emerald-600' : 'text-blue-600'}">${day}</span>
-                    
+
                     <div class="flex flex-col items-center mt-1 w-full border-t border-gray-100 pt-1">
                         <span class="text-[9px] ${timeLabelColor} leading-none mb-0.5">${timeLabel}</span>
                         <span class="text-xs font-bold text-gray-700 leading-none">${time} น.</span>
@@ -673,8 +681,8 @@ async function renderPublicCalendar() {
                     </div>
                     <p class="text-sm text-gray-600 line-clamp-1">📍 ${t.location} ชั้น ${t.floor}</p>
                     <p class="text-xs text-gray-400 mt-1">แจ้งโดย: ${t.full_name}</p>
-                    ${isAppointment 
-                        ? '<span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-emerald-500"></span>' 
+                    ${isAppointment
+                        ? '<span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-emerald-500"></span>'
                         : '<span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-blue-400"></span>'
                     }
                 </div>
@@ -697,7 +705,7 @@ function clearAppointment() {
 function adminLogout() {
     Swal.fire({
         title: 'ออกจากระบบ?',
-        text: "คุณต้องการออกจากโหมด Admin ใช่หรือไม่",
+        text: "คุณต้องการออกจากระบบช่างใช่หรือไม่",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonText: 'ใช่, ออกเลย',
@@ -715,7 +723,6 @@ function adminLogout() {
 // 🌐 ระบบขอปรับปรุง / ต่อเติมอาคาร (ประยุกต์ใช้แทนสร้างเว็บ)
 // ==========================================
 
-// คำนวณระดับความใหญ่ของงานอัตโนมัติ
 function updateWebLevel() {
   const boxes = document.querySelectorAll('.web-feature-cb');
   let max = 0;
@@ -724,7 +731,6 @@ function updateWebLevel() {
   const badge = document.getElementById('web-level-badge');
   if (!badge) return;
 
-  // 🟢 4. เปลี่ยนป้าย Badge ให้แสดงสเกลงานอาคารสถานที่
   if (max >= 3) {
     badge.innerHTML = '<span class="px-3 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-lg border border-red-200">🔴 ใหญ่</span>';
   } else if (max === 2) {
@@ -734,7 +740,6 @@ function updateWebLevel() {
   }
 }
 
-// ส่งฟอร์มขอปรับปรุงสถานที่
 document.getElementById('web-request-form').addEventListener('submit', async function(e) {
   e.preventDefault();
 
@@ -747,12 +752,10 @@ document.getElementById('web-request-form').addEventListener('submit', async fun
     }
   });
 
-  // 🟢 5. เปลี่ยนแมปข้อความระดับความยากให้เข้ากับงานโครงสร้าง
   const levelMap = { 0: 'เล็กน้อย', 1: 'เล็กน้อย', 2: 'ปานกลาง', 3: 'ใหญ่' };
 
   const webData = {
     action: 'web_request',
-    // รหัสใบคำร้องขึ้นต้นด้วย AR (ย่อมาจากอาคารสถานที่)
     id: 'AR' + Math.floor(Math.random() * 1000000).toString().padStart(6, '0'),
     full_name: document.getElementById('web-name').value,
     dept: document.getElementById('web-dept').value,
@@ -785,10 +788,10 @@ document.getElementById('web-request-form').addEventListener('submit', async fun
     Swal.fire({
       icon: 'success',
       title: 'ส่งคำขอสำเร็จ!',
-      html: `รหัสคำขอของคุณคือ:<br><b class="text-green-600 text-2xl">${webData.id}</b><br>
+      html: `รหัสคำขอของคุณคือ:<br><b class="text-orange-600 text-2xl">${webData.id}</b><br>
              <span class="text-sm text-gray-500">สเกลงาน: ${webData.level} • ทีมช่างจะติดต่อกลับเพื่อเข้าสำรวจพื้นที่เร็วๆ นี้</span>`,
       confirmButtonText: 'ตกลง',
-      confirmButtonColor: '#10b981'
+      confirmButtonColor: '#ea580c'
     }).then(() => {
       document.getElementById('web-request-form').reset();
       updateWebLevel();
